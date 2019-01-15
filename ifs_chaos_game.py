@@ -1,8 +1,4 @@
-import random
-
 import numpy as np
-# import matplotlib.pyplot as plt
-import scipy.misc
 import imageio
 
 
@@ -21,10 +17,12 @@ def get_2d_affine_transformation(tx=0.0, ty=0.0, theta=0.0, w=1.0, h=1.0):
     return translation_matrix @ rotation_matrix @ scale_matrix
 
 
-def main(n=5000):
+def main(n=200000):
     pixels_width = 800
     pixels_height = 800
-    frequency_histogram = np.zeros((pixels_width, pixels_height))
+    point_frequencies = np.zeros((pixels_width, pixels_height))
+    point_colors = np.zeros((pixels_width, pixels_height))
+    function_colors = [0.5, 1.0]
     transformations = [get_2d_affine_transformation(w=0.5, h=0.5),
                        get_2d_affine_transformation(tx=1, ty=1, theta=45, w=0.8, h=0.8)]
     final_transform = get_2d_affine_transformation(tx=-.95, w=0.8, h=0.8)
@@ -32,17 +30,21 @@ def main(n=5000):
     xy = np.random.uniform(low=-1.0, high=1.0, size=(1, 2))
     xy = np.append(xy, 1)
     for q in range(n):
-        transformation_matrix = random.choice(transformations)
+        transformation_matrix_i = np.random.randint(0, len(transformations))
+        transformation_matrix = transformations[transformation_matrix_i]
         xy = transformation_matrix @ xy
         xy_final = final_transform @ xy
         if q >= 20:
-            pixel_coords = np.round(((xy_final[0:2] + 1.0) / 2.0) * [pixels_width, pixels_height]).astype(int)
-            if (pixel_coords >= [0, 0]).all():
-                if (pixel_coords < [pixels_width, pixels_height]).all():
-                    frequency_histogram[pixel_coords[0], pixel_coords[1]] += 1
+            pix_coord = np.round(((xy_final[0:2] + 1.0) / 2.0) * [pixels_width, pixels_height]).astype(int)
+            if (pix_coord >= [0, 0]).all():
+                if (pix_coord < [pixels_width, pixels_height]).all():
+                    point_frequencies[pix_coord[0], pix_coord[1]] += 1
+                    point_colors[pix_coord[0], pix_coord[1]] = .5 * (
+                                point_colors[pix_coord[0], pix_coord[1]] + function_colors[transformation_matrix_i])
                     pass
 
-    frequency_histogram = ((frequency_histogram / frequency_histogram.max()) * 255).astype(np.uint8)
+    frequency_histogram = ((point_frequencies / point_frequencies.max()) * 255.0).astype(np.uint8)
+    # imageio.imwrite('out.png', frequency_histogram, transparency=0)
     imageio.imwrite('out.png', frequency_histogram)
     return
 
