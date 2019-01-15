@@ -25,11 +25,16 @@ def main(n=200000):
 
     point_frequencies = np.zeros((pixels_width, pixels_height))
     point_colors = np.zeros((pixels_width, pixels_height))
-    function_colors = [0.5, 1.0]
-    transformations = [get_2d_affine_transformation(w=0.5, h=0.5),
-                       get_2d_affine_transformation(tx=1, ty=1, theta=45, w=0.8, h=0.8)]
+    function_colors = [0.4, 0.5, 1.0]
+    transformations = [get_2d_affine_transformation(tx=-.5, ty=.5, w=0.5, h=0.5),
+                       get_2d_affine_transformation(tx=.5, ty=.5, w=0.5, h=0.5),
+                       get_2d_affine_transformation(tx=0, ty=-.5, w=0.5, h=0.5)]
 
-    final_transform = get_2d_affine_transformation(tx=-.95, w=0.8, h=-0.8)
+    final_transform = get_2d_affine_transformation()
+    # transformations = [get_2d_affine_transformation(w=0.5, h=0.5),
+    #                    get_2d_affine_transformation(tx=1, ty=1, theta=45, w=0.8, h=0.8)]
+    #
+    # final_transform = get_2d_affine_transformation(tx=-.95, w=0.8, h=-0.8)
     # final_transform2 = get_2d_affine_transformation(theta=360)
 
     xy = np.random.uniform(low=-1.0, high=1.0, size=(1, 2))
@@ -53,7 +58,7 @@ def main(n=200000):
 
     # frequency_histogram = ((point_frequencies / point_frequencies.max()) * 255.0).astype(np.uint8)
     # imageio.imwrite('out.png', frequency_histogram, transparency=0)
-    imageio.imwrite('out.png', final_pixel_colors)
+    imageio.imwrite('out.png', final_pixel_colors.T)
     return
 
 
