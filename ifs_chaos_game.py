@@ -20,17 +20,22 @@ def get_2d_affine_transformation(tx=0.0, ty=0.0, theta=0.0, w=1.0, h=1.0):
 
 
 def main(n=1000):
-    transformations = [get_2d_affine_transformation(), get_2d_affine_transformation(tx=1, ty=1, theta=45, w=0.8, h=0.8)]
+    transformations = [get_2d_affine_transformation(w=0.5, h=0.5),
+                       get_2d_affine_transformation(tx=1, ty=1, theta=45, w=0.8, h=0.8)]
 
     xy = np.random.uniform(low=-1.0, high=1.0, size=(1, 2))
     xy = np.append(xy, 1)
     for q in range(n):
         transformation_matrix = random.choice(transformations)
         xy = transformation_matrix @ xy
-        plt.scatter(xy[0], xy[1])
-        
-    plt.xlim(-2, 2)
-    plt.ylim(-2, 2)
+        if q >= 20:
+            plt.scatter(xy[0], xy[1], c='k', alpha=0.1, marker='.')
+
+    widthheight = 2.5
+    left = 0
+    bottom = -1
+    plt.xlim(left, left + widthheight)
+    plt.ylim(bottom, bottom + widthheight)
     plt.show()
     return
 
