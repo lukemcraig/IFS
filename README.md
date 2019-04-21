@@ -5,4 +5,4 @@ https://flam3.com/flame_draves.pdf
 
 Goal (Chaotica) | Current Result of Our Implementation
 --- | --- 
-1 | 2 
+![goal1 - Chaotica](https://github.com/lukemcraig/IFS/blob/master/goal1_chaotica.png) | ![result1 - our implementation](https://github.com/lukemcraig/IFS/blob/master/result1.png)
