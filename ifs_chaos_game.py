@@ -35,11 +35,14 @@ def goal1_transformations():
 
 
 def main(n=200000):
+    n_first_iters_to_skip = 20
+
     pixels_width = 800
     pixels_height = 800
 
     gamma = 4.0
 
+    # number of times a pixel is landed on
     point_frequencies = np.zeros((pixels_width, pixels_height))
     point_colors = np.zeros((pixels_width, pixels_height))
     function_colors = [0.4, 0.5, 1.0]
@@ -50,17 +53,23 @@ def main(n=200000):
     xy = np.append(xy, 1)
     for q in range(n):
         transformation_matrix_i = np.random.randint(0, len(transformations))
+        # the randomly selected transformation (or function)
         transformation_matrix = transformations[transformation_matrix_i]
         xy = transformation_matrix @ xy
         xy_final = final_transform @ xy
-        if q >= 20:
+        # skip the first few iterations
+        if q >= n_first_iters_to_skip:
+            # quantize point to the pixel grid
             pix_coord = np.round(((xy_final[0:2] + 1.0) / 2.0) * [pixels_width, pixels_height]).astype(int)
-            if (pix_coord >= [0, 0]).all():
-                if (pix_coord < [pixels_width, pixels_height]).all():
-                    point_frequencies[pix_coord[0], pix_coord[1]] += 1
-                    point_colors[pix_coord[0], pix_coord[1]] = .5 * (
-                            point_colors[pix_coord[0], pix_coord[1]] + function_colors[transformation_matrix_i])
-                    pass
+            # if the pixel is on the canvas
+            if (pix_coord >= [0, 0]).all() and (pix_coord < [pixels_width, pixels_height]).all():
+                # increase the pixel's histogram count
+                point_frequencies[pix_coord[0], pix_coord[1]] += 1
+                # shade the pixel based on the tranformations color
+                pixel_color = point_colors[pix_coord[0], pix_coord[1]]
+                function_color = function_colors[transformation_matrix_i]
+                point_colors[pix_coord[0], pix_coord[1]] = .5 * (pixel_color + function_color)
+                pass
     alpha = np.log(point_frequencies) / np.log(point_frequencies.max())
     final_pixel_colors = point_colors * alpha ** (1 / gamma)
 
