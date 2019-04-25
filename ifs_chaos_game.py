@@ -1,6 +1,10 @@
+import matplotlib
+
+matplotlib.use("Agg")
 import numpy as np
 import imageio
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from matplotlib import patches
 from matplotlib import rcParams
 
@@ -58,6 +62,7 @@ def main(n=200000, visualize_algorithm=False):
     final_transform, transformations = goal1_transformations()
 
     if visualize_algorithm:
+        ims = []
         axes[0].set_title("Selected Function (Equal $p$)")
         y_labels = ["$f_" + str(i) + "$" for i in range(len(transformations))]
         axes[0].set_yticks(np.arange(len(transformations)))
@@ -119,11 +124,19 @@ def main(n=200000, visualize_algorithm=False):
                     # plt.scatter(0, 1)
                     axes[1].scatter(pix_coord[1], pix_coord[0])
                     cb = fig.colorbar(im, ax=axes[1])
-                    plt.pause(.0001)
+
+                    # plt.pause(.0001)
+                    fig.canvas.draw()
+                    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+                    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+                    ims.append(image)
+                    print(q)
                     cb.remove()
                     transf_scatter.remove()
                     # plt.clf()
                     pass
+    if visualize_algorithm:
+        imageio.mimsave('./visualization.gif', ims, fps=10)
     alpha = np.log(point_frequencies) / np.log(point_frequencies.max())
     final_pixel_colors = point_colors * alpha ** (1 / gamma)
 
@@ -133,4 +146,4 @@ def main(n=200000, visualize_algorithm=False):
     return
 
 
-main(visualize_algorithm=True)
+main(n=500, visualize_algorithm=True)
