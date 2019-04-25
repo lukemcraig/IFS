@@ -1,5 +1,6 @@
 import numpy as np
 import imageio
+import matplotlib.pyplot as plt
 
 
 def get_2d_affine_transformation(tx=0.0, ty=0.0, theta=0.0, w=1.0, h=1.0):
@@ -34,11 +35,11 @@ def goal1_transformations():
     return final_transform, transformations
 
 
-def main(n=200000):
+def main(n=200000, visualize_algorithm=False):
     n_first_iters_to_skip = 20
 
-    pixels_width = 800
-    pixels_height = 800
+    pixels_width = 200
+    pixels_height = 300
 
     gamma = 4.0
 
@@ -65,10 +66,17 @@ def main(n=200000):
             if (pix_coord >= [0, 0]).all() and (pix_coord < [pixels_width, pixels_height]).all():
                 # increase the pixel's histogram count
                 point_frequencies[pix_coord[0], pix_coord[1]] += 1
-                # shade the pixel based on the tranformations color
+                # shade the pixel based on the transformations color
                 pixel_color = point_colors[pix_coord[0], pix_coord[1]]
                 function_color = function_colors[transformation_matrix_i]
                 point_colors[pix_coord[0], pix_coord[1]] = .5 * (pixel_color + function_color)
+                if visualize_algorithm:
+                    plt.imshow(point_frequencies, cmap='gray')
+                    plt.colorbar()
+                    # plt.scatter(0, 1)
+                    plt.scatter(pix_coord[1], pix_coord[0])
+                    plt.pause(.001)
+                    plt.clf()
                 pass
     alpha = np.log(point_frequencies) / np.log(point_frequencies.max())
     final_pixel_colors = point_colors * alpha ** (1 / gamma)
@@ -79,4 +87,4 @@ def main(n=200000):
     return
 
 
-main()
+main(visualize_algorithm=True)
