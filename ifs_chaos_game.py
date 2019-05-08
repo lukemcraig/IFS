@@ -49,8 +49,8 @@ def main(n=200000, visualize_algorithm=False):
 
     n_first_iters_to_skip = 20
 
-    pixels_width = 400
-    pixels_height = 200
+    pixels_width = 800
+    pixels_height = 800
 
     gamma = 4.0
 
@@ -146,4 +146,5 @@ def main(n=200000, visualize_algorithm=False):
     return
 
 
-main(n=500, visualize_algorithm=True)
+# main(n=500, visualize_algorithm=True)
+main(n=800000)
