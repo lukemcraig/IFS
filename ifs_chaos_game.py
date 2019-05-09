@@ -1,6 +1,6 @@
 import matplotlib
 
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 import numpy as np
 import imageio
 import matplotlib.pyplot as plt
@@ -98,6 +98,44 @@ def goal1_transformations():
     return final_transform, transformations
 
 
+def adaptive_filter(density_alpha, max_kernel_radius, point_frequencies):
+    # http://www.eecs.ucf.edu/seniordesign/su2011fa2011/g12/SD1_report.pdf
+    # https://pdfs.semanticscholar.org/4522/05fd45452b2963b0d4d998128dba233987d5.pdf
+    # https://flam3.com/flame_draves.pdf
+    # https://en.wikipedia.org/wiki/Fractal_flame#Density_Estimation
+
+    # higher density_alpha means smaller minimum kernel width
+    kernel_width = max_kernel_radius / (point_frequencies ** density_alpha)
+
+    filtered_histogram = np.zeros_like(point_frequencies)
+    unique_values = np.unique(kernel_width)
+    # print(unique_values[-1])
+    # filtered_histogram = scipy.ndimage.filters.gaussian_filter(point_frequencies, sigma=unique_values[0])
+    # return filtered_histogram
+    for unique_value in unique_values:
+        index = kernel_width == unique_value
+        this_filtered_image = scipy.ndimage.filters.gaussian_filter(point_frequencies, sigma=unique_value)
+        # plt.imshow(this_filtered_image)
+        # plt.show()
+        filtered_histogram[index] = this_filtered_image[index]
+    # for i in range(filtered_histogram.shape[0]):
+    #     for j in range(filtered_histogram.shape[1]):
+    #         print(i, j)
+    #         filtered_histogram[i, j] = scipy.ndimage.filters.gaussian_filter(point_frequencies,
+    #                                                                          sigma=kernel_width[i, j])[i, j]
+    return filtered_histogram
+
+
+def gamma_correction(gamma, point_colors, point_frequencies):
+    # point_frequencies += np.finfo(float).eps
+    point_frequencies_max = point_frequencies.max()
+    alpha = np.log(point_frequencies) / np.log(point_frequencies_max)
+    # alpha[alpha < 0] = 0
+    # alpha += alpha.min()
+    final_pixel_colors = point_colors * (alpha ** (1 / gamma))
+    return final_pixel_colors
+
+
 def main(n=200000, visualize_algorithm=False):
     if visualize_algorithm:
         fig, axes = plt.subplots(1, 2)
@@ -106,15 +144,15 @@ def main(n=200000, visualize_algorithm=False):
 
     n_first_iters_to_skip = 20
 
-    pixels_width = 300
-    pixels_height = 300
+    pixels_width = 900
+    pixels_height = 900
 
     gamma = 4.0
 
     # number of times a pixel is landed on
     point_frequencies = np.zeros((pixels_width, pixels_height))
     point_colors = np.zeros((pixels_width, pixels_height))
-    function_colors = [0.55, 0.75, 1.0]
+    function_colors = [0.1, 0.5, 1.0]
     # final_transform, transformations = goal2_transformations()
     final_transform, transformations = goal1_transformations()
 
@@ -148,40 +186,29 @@ def main(n=200000, visualize_algorithm=False):
     if visualize_algorithm:
         imageio.mimsave('./visualization.gif', ims, fps=10)
 
-    point_frequencies += 1
-    # http://www.eecs.ucf.edu/seniordesign/su2011fa2011/g12/SD1_report.pdf
-    # https://pdfs.semanticscholar.org/4522/05fd45452b2963b0d4d998128dba233987d5.pdf
-    # https://flam3.com/flame_draves.pdf
-    # https://en.wikipedia.org/wiki/Fractal_flame#Density_Estimation
-    max_kernel_radius = 2
-    density_alpha = 1
-    kernel_width = max_kernel_radius / (point_frequencies ** density_alpha)
-    filtered_histogram = np.zeros_like(point_frequencies)
-    unique_values = np.unique(kernel_width)
-    for unique_value in unique_values:
-        index = kernel_width == unique_value
-        filtered_histogram[index] = scipy.ndimage.filters.gaussian_filter(point_frequencies,
-                                                                          sigma=unique_value)[index]
-    # for i in range(filtered_histogram.shape[0]):
-    #     for j in range(filtered_histogram.shape[1]):
-    #         print(i, j)
-    #         filtered_histogram[i, j] = scipy.ndimage.filters.gaussian_filter(point_frequencies,
-    #                                                                          sigma=kernel_width[i, j])[i, j]
-    point_frequencies = filtered_histogram
+    max_kernel_radius = 50
+    density_alpha = 3
+    epsilon = 1
+    process_and_save(density_alpha=density_alpha, epsilon=epsilon, gamma=gamma, max_kernel_radius=max_kernel_radius,
+                     point_colors=point_colors, point_frequencies=point_frequencies)
+    return
 
-    # point_frequencies += np.finfo(float).eps
-    point_frequencies_max = point_frequencies.max()
-    alpha = np.log(point_frequencies) / np.log(point_frequencies_max)
-    # alpha[alpha < 0] = 0
-    # alpha += alpha.min()
-    final_pixel_colors = point_colors * (alpha ** (1 / gamma))
 
-    # frequency_histogram = ((point_frequencies / point_frequencies.max()) * 255.0).astype(np.uint8)
-    # imageio.imwrite('out.png', frequency_histogram, transparency=0)
+def process_and_save(density_alpha, epsilon, gamma, max_kernel_radius, point_colors, point_frequencies):
+    point_frequencies += epsilon
+    adaptive_filtering = True
+    if adaptive_filtering:
+        point_frequencies_filtered = adaptive_filter(density_alpha, max_kernel_radius, point_frequencies, point_colors)
+        final_pixel_colors_filtered = gamma_correction(gamma, point_colors, point_frequencies_filtered)
+        imageio.imwrite('result_adaptive_filtered.png', final_pixel_colors_filtered)
 
-    imageio.imwrite('result_adaptive_filtered.png', final_pixel_colors)
+    final_pixel_colors = gamma_correction(gamma, point_colors, point_frequencies)
+
+    # final_pixel_colors = ((final_pixel_colors / final_pixel_colors.max()) * 255.0).astype(np.uint8)
+    # imageio.imwrite('out.png', final_pixel_colors, transparency=0)
+    imageio.imwrite('result_not_filtered.png', final_pixel_colors)
     return
 
 
 # main(n=500, visualize_algorithm=True)
-main(n=20000)
+main(n=50000)
