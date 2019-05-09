@@ -7,6 +7,63 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib import patches
 from matplotlib import rcParams
+import scipy.ndimage.filters
+
+
+def setup_visualization(axes, transformations):
+    ims = []
+    axes[0].set_title("Selected Function (Equal $p$)")
+    y_labels = ["$f_" + str(i) + "$" for i in range(len(transformations))]
+    axes[0].set_yticks(np.arange(len(transformations)))
+    axes[0].set_yticklabels(y_labels)
+    for j, transf in enumerate(transformations):
+        left = 0
+        width = 1
+        right = left + width
+        height = 1
+        bottom = (height * j) - .5
+        top = bottom + height
+        p = patches.Rectangle(
+            (left, bottom), width, height,
+            fill=False, clip_on=False, alpha=0
+        )
+        axes[0].add_patch(p)
+
+        axes[0].text(0.5 * (left + right), 0.5 * (bottom + top),
+                     r"$ \begin{bmatrix} %.1f & %.1f & %.1f \\ %.1f & %.1f & %.1f \\ %.1f & %.1f & %.1f \end{bmatrix} $" % (
+                         transf[0, 0],
+                         transf[0, 1],
+                         transf[0, 2],
+                         transf[1, 0],
+                         transf[1, 1],
+                         transf[1, 2],
+                         transf[2, 0],
+                         transf[2, 1],
+                         transf[2, 2]),
+                     horizontalalignment='center',
+                     verticalalignment='center',
+                     fontsize=20)
+        pass
+    return ims
+
+
+def add_next_visualization_animation_frame(axes, fig, ims, pix_coord, point_frequencies, q, transformation_matrix_i):
+    axes[1].clear()
+    transf_scatter = axes[0].scatter(0, transformation_matrix_i, color='blue')
+    im = axes[1].imshow(point_frequencies, cmap='gray')
+    # plt.scatter(0, 1)
+    axes[1].scatter(pix_coord[1], pix_coord[0])
+    cb = fig.colorbar(im, ax=axes[1])
+    # plt.pause(.0001)
+    fig.canvas.draw()
+    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
+    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+    ims.append(image)
+    print(q)
+    cb.remove()
+    transf_scatter.remove()
+    # plt.clf()
+    pass
 
 
 def get_2d_affine_transformation(tx=0.0, ty=0.0, theta=0.0, w=1.0, h=1.0):
@@ -57,48 +114,17 @@ def main(n=200000, visualize_algorithm=False):
     # number of times a pixel is landed on
     point_frequencies = np.zeros((pixels_width, pixels_height))
     point_colors = np.zeros((pixels_width, pixels_height))
-    function_colors = [0.4, 0.5, 1.0]
+    function_colors = [0.55, 0.75, 1.0]
     # final_transform, transformations = goal2_transformations()
     final_transform, transformations = goal1_transformations()
 
     if visualize_algorithm:
-        ims = []
-        axes[0].set_title("Selected Function (Equal $p$)")
-        y_labels = ["$f_" + str(i) + "$" for i in range(len(transformations))]
-        axes[0].set_yticks(np.arange(len(transformations)))
-        axes[0].set_yticklabels(y_labels)
-        for j, transf in enumerate(transformations):
-            left = 0
-            width = 1
-            right = left + width
-            height = 1
-            bottom = (height * j) - .5
-            top = bottom + height
-            p = patches.Rectangle(
-                (left, bottom), width, height,
-                fill=False, clip_on=False, alpha=0
-            )
-            axes[0].add_patch(p)
-
-            axes[0].text(0.5 * (left + right), 0.5 * (bottom + top),
-                         r"$ \begin{bmatrix} %.1f & %.1f & %.1f \\ %.1f & %.1f & %.1f \\ %.1f & %.1f & %.1f \end{bmatrix} $" % (
-                             transf[0, 0],
-                             transf[0, 1],
-                             transf[0, 2],
-                             transf[1, 0],
-                             transf[1, 1],
-                             transf[1, 2],
-                             transf[2, 0],
-                             transf[2, 1],
-                             transf[2, 2]),
-                         horizontalalignment='center',
-                         verticalalignment='center',
-                         fontsize=20)
-            pass
+        ims = setup_visualization(axes, transformations)
 
     xy = np.random.uniform(low=-1.0, high=1.0, size=(1, 2))
     xy = np.append(xy, 1)
     for q in range(n):
+        print(q)
         transformation_matrix_i = np.random.randint(0, len(transformations))
         # the randomly selected transformation (or function)
         transformation_matrix = transformations[transformation_matrix_i]
@@ -117,34 +143,28 @@ def main(n=200000, visualize_algorithm=False):
                 function_color = function_colors[transformation_matrix_i]
                 point_colors[pix_coord[0], pix_coord[1]] = .5 * (pixel_color + function_color)
                 if visualize_algorithm:
-                    axes[1].clear()
-
-                    transf_scatter = axes[0].scatter(0, transformation_matrix_i, color='blue')
-                    im = axes[1].imshow(point_frequencies, cmap='gray')
-                    # plt.scatter(0, 1)
-                    axes[1].scatter(pix_coord[1], pix_coord[0])
-                    cb = fig.colorbar(im, ax=axes[1])
-
-                    # plt.pause(.0001)
-                    fig.canvas.draw()
-                    image = np.frombuffer(fig.canvas.tostring_rgb(), dtype='uint8')
-                    image = image.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-                    ims.append(image)
-                    print(q)
-                    cb.remove()
-                    transf_scatter.remove()
-                    # plt.clf()
-                    pass
+                    add_next_visualization_animation_frame(axes, fig, ims, pix_coord, point_frequencies, q,
+                                                           transformation_matrix_i)
     if visualize_algorithm:
         imageio.mimsave('./visualization.gif', ims, fps=10)
+    # http://www.eecs.ucf.edu/seniordesign/su2011fa2011/g12/SD1_report.pdf
+    # https://pdfs.semanticscholar.org/4522/05fd45452b2963b0d4d998128dba233987d5.pdf
+    # https://flam3.com/flame_draves.pdf
+    # https://en.wikipedia.org/wiki/Fractal_flame#Density_Estimation
+    max_kernel_radius = 10
+    density_alpha = 10
+    kernel_width = max_kernel_radius / (point_frequencies ** density_alpha)
+    # point_frequencies = scipy.ndimage.filters.gaussian_filter(point_frequencies, sigma=5)
+
     alpha = np.log(point_frequencies) / np.log(point_frequencies.max())
     final_pixel_colors = point_colors * alpha ** (1 / gamma)
 
     # frequency_histogram = ((point_frequencies / point_frequencies.max()) * 255.0).astype(np.uint8)
     # imageio.imwrite('out.png', frequency_histogram, transparency=0)
-    imageio.imwrite('result1.png', final_pixel_colors)
+
+    imageio.imwrite('result_not_gaussian_filtered.png', final_pixel_colors)
     return
 
 
 # main(n=500, visualize_algorithm=True)
-main(n=800000)
+main(n=200000)
