@@ -98,7 +98,7 @@ def goal1_transformations():
     return final_transform, transformations
 
 
-def adaptive_filter(density_alpha, max_kernel_radius, point_frequencies):
+def adaptive_filter(density_alpha, max_kernel_radius, point_frequencies, point_colors):
     # http://www.eecs.ucf.edu/seniordesign/su2011fa2011/g12/SD1_report.pdf
     # https://pdfs.semanticscholar.org/4522/05fd45452b2963b0d4d998128dba233987d5.pdf
     # https://flam3.com/flame_draves.pdf
@@ -106,7 +106,7 @@ def adaptive_filter(density_alpha, max_kernel_radius, point_frequencies):
 
     # higher density_alpha means smaller minimum kernel width
     kernel_width = max_kernel_radius / (point_frequencies ** density_alpha)
-
+    point_colors_filtered = np.zeros_like(point_colors)
     filtered_histogram = np.zeros_like(point_frequencies)
     unique_values = np.unique(kernel_width)
     # print(unique_values[-1])
@@ -118,12 +118,14 @@ def adaptive_filter(density_alpha, max_kernel_radius, point_frequencies):
         # plt.imshow(this_filtered_image)
         # plt.show()
         filtered_histogram[index] = this_filtered_image[index]
+        this_filtered_colors = scipy.ndimage.filters.gaussian_filter(point_colors, sigma=unique_value)
+        point_colors_filtered[index] = this_filtered_colors[index]
     # for i in range(filtered_histogram.shape[0]):
     #     for j in range(filtered_histogram.shape[1]):
     #         print(i, j)
     #         filtered_histogram[i, j] = scipy.ndimage.filters.gaussian_filter(point_frequencies,
     #                                                                          sigma=kernel_width[i, j])[i, j]
-    return filtered_histogram
+    return filtered_histogram, point_colors_filtered
 
 
 def gamma_correction(gamma, point_colors, point_frequencies):
@@ -132,8 +134,10 @@ def gamma_correction(gamma, point_colors, point_frequencies):
     alpha = np.log(point_frequencies) / np.log(point_frequencies_max)
     # alpha[alpha < 0] = 0
     # alpha += alpha.min()
-    final_pixel_colors = point_colors * (alpha ** (1 / gamma))[:, :, None]
-    return final_pixel_colors
+    final_pixel_colors = point_colors * (alpha ** (1 / gamma))  # [:, :, None]
+    cmap = matplotlib.cm.get_cmap('terrain')
+    final_pixel_colors_mapped = cmap(final_pixel_colors)
+    return final_pixel_colors_mapped
 
 
 def main(n=200000, visualize_algorithm=False):
@@ -151,8 +155,9 @@ def main(n=200000, visualize_algorithm=False):
 
     # number of times a pixel is landed on
     point_frequencies = np.zeros((pixels_width, pixels_height))
-    point_colors = np.zeros((pixels_width, pixels_height, 3))
-    function_colors = np.array([[0.3, 1.0, 0.8], [0.3, 0.7, 1.0]])
+    point_colors = np.zeros((pixels_width, pixels_height))
+    # function_colors = np.array([[0.3, 1.0, 0.8], [0.3, 0.7, 1.0]])
+    function_colors = np.array([0.2, 0.8])
     # final_transform, transformations = goal2_transformations()
     final_transform, transformations = goal1_transformations()
 
@@ -195,17 +200,21 @@ def main(n=200000, visualize_algorithm=False):
 
 
 def process_and_save(density_alpha, epsilon, gamma, max_kernel_radius, point_colors, point_frequencies):
+    background_index = point_frequencies == 0
     point_frequencies += epsilon
     adaptive_filtering = True
     if adaptive_filtering:
-        point_frequencies_filtered = adaptive_filter(density_alpha, max_kernel_radius, point_frequencies)
-        final_pixel_colors_filtered = gamma_correction(gamma, point_colors, point_frequencies_filtered)
+        point_frequencies_filtered, point_colors_filtered = adaptive_filter(density_alpha, max_kernel_radius,
+                                                                            point_frequencies, point_colors)
+        final_pixel_colors_filtered = gamma_correction(gamma, point_colors_filtered, point_frequencies_filtered)
+        final_pixel_colors_filtered[background_index] = [0, 0, 0, 1]
         imageio.imwrite('result_adaptive_filtered.png', final_pixel_colors_filtered)
 
     final_pixel_colors = gamma_correction(gamma, point_colors, point_frequencies)
 
     # final_pixel_colors = ((final_pixel_colors / final_pixel_colors.max()) * 255.0).astype(np.uint8)
     # imageio.imwrite('out.png', final_pixel_colors, transparency=0)
+    final_pixel_colors[background_index] = [0, 0, 0, 1]
     imageio.imwrite('result_not_filtered.png', final_pixel_colors)
     return
 
