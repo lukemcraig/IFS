@@ -132,7 +132,7 @@ def gamma_correction(gamma, point_colors, point_frequencies):
     alpha = np.log(point_frequencies) / np.log(point_frequencies_max)
     # alpha[alpha < 0] = 0
     # alpha += alpha.min()
-    final_pixel_colors = point_colors * (alpha ** (1 / gamma))
+    final_pixel_colors = point_colors * (alpha ** (1 / gamma))[:, :, None]
     return final_pixel_colors
 
 
@@ -151,8 +151,8 @@ def main(n=200000, visualize_algorithm=False):
 
     # number of times a pixel is landed on
     point_frequencies = np.zeros((pixels_width, pixels_height))
-    point_colors = np.zeros((pixels_width, pixels_height))
-    function_colors = [0.1, 0.5, 1.0]
+    point_colors = np.zeros((pixels_width, pixels_height, 3))
+    function_colors = np.array([[0.3, 1.0, 0.8], [0.3, 0.7, 1.0]])
     # final_transform, transformations = goal2_transformations()
     final_transform, transformations = goal1_transformations()
 
@@ -198,7 +198,7 @@ def process_and_save(density_alpha, epsilon, gamma, max_kernel_radius, point_col
     point_frequencies += epsilon
     adaptive_filtering = True
     if adaptive_filtering:
-        point_frequencies_filtered = adaptive_filter(density_alpha, max_kernel_radius, point_frequencies, point_colors)
+        point_frequencies_filtered = adaptive_filter(density_alpha, max_kernel_radius, point_frequencies)
         final_pixel_colors_filtered = gamma_correction(gamma, point_colors, point_frequencies_filtered)
         imageio.imwrite('result_adaptive_filtered.png', final_pixel_colors_filtered)
 
