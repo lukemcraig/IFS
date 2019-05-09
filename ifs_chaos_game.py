@@ -134,9 +134,10 @@ def gamma_correction(gamma, point_colors, point_frequencies):
     alpha = np.log(point_frequencies) / np.log(point_frequencies_max)
     # alpha[alpha < 0] = 0
     # alpha += alpha.min()
-    final_pixel_colors = point_colors * (alpha ** (1 / gamma))  # [:, :, None]
     cmap = matplotlib.cm.get_cmap('terrain')
-    final_pixel_colors_mapped = cmap(final_pixel_colors)
+    final_pixel_colors_mapped = cmap(point_colors)
+    intensities = (alpha ** (1 / gamma))[:, :, None]
+    final_pixel_colors_mapped[:, :, 0:3] *= intensities
     return final_pixel_colors_mapped
 
 
@@ -220,4 +221,4 @@ def process_and_save(density_alpha, epsilon, gamma, max_kernel_radius, point_col
 
 
 # main(n=500, visualize_algorithm=True)
-main(n=50000)
+main(n=500000)
